@@ -175,6 +175,7 @@ impl FntFile {
                 FntPage::KEYWORD => output.pages.push(FntPage::try_parse(data)?),
                 "chars" => {}, // ignore
                 FntChar::KEYWORD => output.chars.push(FntChar::try_parse(data)?),
+                "kernings" => {}, // ignore for now
                 _ => eprintln!("fnt::FntFile: Unrecognized keyword '{ident}' in fnt declaration."),
             }
         }
