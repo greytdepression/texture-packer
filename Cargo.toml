@@ -11,3 +11,5 @@ opt-level = 3
 [dependencies]
 image = { version = "0.24.7", default-features = false, features = ["png"] }
 rectangle-pack = "0.4.2"
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
