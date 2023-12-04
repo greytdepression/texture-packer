@@ -173,9 +173,9 @@ impl FntFile {
                 FntInfo::KEYWORD => output.info = FntInfo::try_parse(data)?,
                 FntCommon::KEYWORD => output.common = FntCommon::try_parse(data)?,
                 FntPage::KEYWORD => output.pages.push(FntPage::try_parse(data)?),
-                "chars" => {}, // ignore
+                "chars" => {} // ignore
                 FntChar::KEYWORD => output.chars.push(FntChar::try_parse(data)?),
-                "kernings" => {}, // ignore for now
+                "kernings" => {} // ignore for now
                 _ => eprintln!("fnt::FntFile: Unrecognized keyword '{ident}' in fnt declaration."),
             }
         }
@@ -193,7 +193,9 @@ fn parse<T: FromStr>(rhs: &str) -> Result<T, String> {
     })
 }
 
-fn parse_array<T: FromStr + Default + Copy, const N: usize>(mut rhs: &str) -> Result<[T; N], String> {
+fn parse_array<T: FromStr + Default + Copy, const N: usize>(
+    mut rhs: &str,
+) -> Result<[T; N], String> {
     let mut output = [T::default(); N];
 
     let original_str = rhs;
@@ -208,14 +210,18 @@ fn parse_array<T: FromStr + Default + Copy, const N: usize>(mut rhs: &str) -> Re
     }
 
     if index != N || !rhs.is_empty() {
-        return Err(format!("fnt::parse_array(): The string `{original_str}` does not have {N} values."))
+        return Err(format!(
+            "fnt::parse_array(): The string `{original_str}` does not have {N} values."
+        ));
     }
 
     Ok(output)
 }
 
 fn parse_line<F>(mut line: &str, mut callback: F) -> Result<(), String>
-where F: FnMut(&str, &str) -> Result<(), String> {
+where
+    F: FnMut(&str, &str) -> Result<(), String>,
+{
     while !line.is_empty() {
         let (expr, next) = consume_until_space(line);
         line = next;
@@ -231,27 +237,29 @@ where F: FnMut(&str, &str) -> Result<(), String> {
 }
 
 fn parse_string(value: &str) -> Result<String, String> {
-    Ok(
-        value.strip_prefix('"')
-            .ok_or(format!("fnt::parse_string(): String value needs to start with '\"', but `{value}` does not!"))?
-            .strip_suffix('"')
-            .ok_or(format!("parse_string(): String value needs to end with '\"', but `{value}` does not!"))?
-            .to_string()
-    )
+    Ok(value
+        .strip_prefix('"')
+        .ok_or(format!(
+            "fnt::parse_string(): String value needs to start with '\"', but `{value}` does not!"
+        ))?
+        .strip_suffix('"')
+        .ok_or(format!(
+            "parse_string(): String value needs to end with '\"', but `{value}` does not!"
+        ))?
+        .to_string())
 }
 
 fn consume_until_space(line: &str) -> (&str, &str) {
     if let Some(index) = line.find(' ') {
-        return (&line[0..index], line[index+1..].trim_start());
+        return (&line[0..index], line[index + 1..].trim_start());
     }
 
     (line, "")
 }
 
-
 fn consume_until_pat(line: &str, pat: char) -> (&str, &str) {
     if let Some(index) = line.find(pat) {
-        return (&line[0..index], &line[index+1..]);
+        return (&line[0..index], &line[index + 1..]);
     }
 
     (line, "")
@@ -264,7 +272,7 @@ fn try_split_equality(expr: &str) -> Option<(&str, &str)> {
         return None;
     }
 
-    Some((&expr[0..index], &expr[index+1..]))
+    Some((&expr[0..index], &expr[index + 1..]))
 }
 #[cfg(test)]
 mod tests {
@@ -272,7 +280,8 @@ mod tests {
 
     #[test]
     fn test_consume_until_space() {
-        let mut line = "char id=0       x=0    y=0    width=7    height=13   xoffset=-1   yoffset=-1";
+        let mut line =
+            "char id=0       x=0    y=0    width=7    height=13   xoffset=-1   yoffset=-1";
 
         while !line.is_empty() {
             let (lhs, rhs) = consume_until_space(line);
@@ -299,5 +308,4 @@ mod tests {
 
         Ok(())
     }
-
 }
