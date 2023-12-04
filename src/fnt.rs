@@ -11,9 +11,8 @@ pub struct FntFile {
     // Pages `page`
     pub pages: Vec<FntPage>,
 
-    // Chars `chars`/`char`
-    pub chars_count: FntChars,
-    pub char_vec: Vec<FntChar>,
+    // Chars `char`
+    pub chars: Vec<FntChar>,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -59,11 +58,6 @@ pub struct FntCommon {
     pub scale_h: i32,
     pub num_pages: u32,
     pub packed: u8,
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct FntChars {
-    pub count: usize,
 }
 
 //--------------------------------------------------
@@ -168,24 +162,6 @@ impl FntCommon {
     }
 }
 
-impl FntChars {
-    const KEYWORD: &'static str = "chars";
-
-    fn try_parse(line: &str) -> Result<Self, String> {
-        let mut output = Self::default();
-        parse_line(line, |lhs, rhs| {
-            match lhs {
-                "count" => output.count = parse(rhs)?,
-                _ => panic!("Unrecognized attribute '{lhs}' in fnt chars declaration."),
-            }
-
-            Ok(())
-        })?;
-
-        Ok(output)
-    }
-}
-
 impl FntFile {
     pub fn try_parse(file_contents: &str) -> Result<Self, String> {
         let mut output = Self::default();
@@ -197,8 +173,8 @@ impl FntFile {
                 FntInfo::KEYWORD => output.info = FntInfo::try_parse(data)?,
                 FntCommon::KEYWORD => output.common = FntCommon::try_parse(data)?,
                 FntPage::KEYWORD => output.pages.push(FntPage::try_parse(data)?),
-                FntChars::KEYWORD => output.chars_count = FntChars::try_parse(data)?,
-                FntChar::KEYWORD => output.char_vec.push(FntChar::try_parse(data)?),
+                "chars" => {}, // ignore
+                FntChar::KEYWORD => output.chars.push(FntChar::try_parse(data)?),
                 _ => eprintln!("fnt::FntFile: Unrecognized keyword '{ident}' in fnt declaration."),
             }
         }
@@ -316,9 +292,8 @@ mod tests {
             &fnt_file.info,
             &fnt_file.common,
             &fnt_file.pages,
-            &fnt_file.chars_count,
-            &fnt_file.char_vec[..5],
-            fnt_file.char_vec.len(),
+            &fnt_file.chars[..5],
+            fnt_file.chars.len(),
         );
 
         Ok(())
