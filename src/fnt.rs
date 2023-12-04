@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FntFile {
     // Info `info`
     pub info: FntInfo,
@@ -15,13 +15,13 @@ pub struct FntFile {
     pub chars: Vec<FntChar>,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FntPage {
     pub id: u32,
     pub file: String,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FntChar {
     pub id: u32,
     pub x: i32,
@@ -35,7 +35,7 @@ pub struct FntChar {
     pub chnl: u32,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FntInfo {
     pub face: String,
     pub size: i32,
@@ -50,7 +50,7 @@ pub struct FntInfo {
     pub spacing: [i32; 2],
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FntCommon {
     pub line_height: i32,
     pub base: i32,
