@@ -47,11 +47,12 @@ impl Sources {
         let index = match id {
             SourceId::Image(index) => index,
             SourceId::Fnt(_) => {
-                Ewwow.raise()
+                Ewwow
+                    .raise()
                     .with_context(|| format!("Incompatible source id {id:?} for image source"))?;
 
                 unreachable!();
-            },
+            }
         };
 
         Ok(&self.images[index].1)
@@ -61,50 +62,15 @@ impl Sources {
         let index = match id {
             SourceId::Fnt(index) => index,
             SourceId::Image(_) => {
-                Ewwow.raise()
+                Ewwow
+                    .raise()
                     .with_context(|| format!("Incompatible source id {id:?} for image source"))?;
 
                 unreachable!();
-            },
+            }
         };
 
         Ok(&self.fnt_files[index].1)
-    }
-
-    pub fn insert_alias(&mut self, id: SourceId, alias: String) -> anyhow::Result<()> {
-        // We only need the value inside the if scope below, but we move this up here
-        // to always check that `id` is valid!
-        let this_path = self
-            .get_path(id)
-            .with_context(|| format!("Failed to insert source alias '{}'", &alias))?;
-
-        // Check if the alias has been registered already
-        if let Some(other_id) = self.source_file_aliases.get(&alias) {
-            let other_path = self.get_path(*other_id).expect(
-                "The invariance of `source_file_aliases` only listing valid ids has been broken!",
-            );
-
-            if this_path == other_path {
-                println!(
-                    "INFO: Source file alias '{}' has been inserted already for path {}",
-                    &alias,
-                    this_path.to_str().unwrap(),
-                );
-
-                return Ok(());
-            }
-
-            println!(
-                "WARN: Source file alias exists already! It refers to the file '{}'. Aborting insertion of alias.",
-                other_path.to_str().unwrap(),
-            );
-
-            return Ok(());
-        }
-
-        self.source_file_aliases.insert(alias, id);
-
-        Ok(())
     }
 
     pub fn get_path(&self, id: SourceId) -> anyhow::Result<&Path> {
