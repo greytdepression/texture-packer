@@ -42,6 +42,34 @@ impl Sources {
         }
     }
 
+    pub fn get_image(&self, id: SourceId) -> anyhow::Result<&image::RgbaImage> {
+        let index = match id {
+            SourceId::Image(index) => index,
+            SourceId::Fnt(_) => {
+                Ewwow.raise()
+                    .with_context(|| format!("Incompatible source id {id:?} for image source"))?;
+
+                unreachable!();
+            },
+        };
+
+        Ok(&self.images[index].1)
+    }
+
+    pub fn get_fnt(&self, id: SourceId) -> anyhow::Result<&fnt::FntFile> {
+        let index = match id {
+            SourceId::Fnt(index) => index,
+            SourceId::Image(_) => {
+                Ewwow.raise()
+                    .with_context(|| format!("Incompatible source id {id:?} for image source"))?;
+
+                unreachable!();
+            },
+        };
+
+        Ok(&self.fnt_files[index].1)
+    }
+
     pub fn insert_alias(&mut self, id: SourceId, alias: String) -> anyhow::Result<()> {
         // We only need the value inside the if scope below, but we move this up here
         // to always check that `id` is valid!
