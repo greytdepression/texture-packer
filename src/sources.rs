@@ -27,7 +27,7 @@ impl SourceId {
 
 #[derive(Debug)]
 pub struct Sources {
-    pub images: Vec<(PathBuf, image::DynamicImage)>,
+    pub images: Vec<(PathBuf, image::RgbaImage)>,
     pub fnt_files: Vec<(PathBuf, fnt::FntFile)>,
 
     pub source_file_aliases: HashMap<String, SourceId>,
@@ -205,7 +205,8 @@ impl Sources {
 
         // Load the image
         let image = image::open(path)
-            .with_context(|| format!("Failed to read png image '{}'", &file_name))?;
+            .with_context(|| format!("Failed to read png image '{}'", &file_name))?
+            .to_rgba8();
 
         let id = SourceId::Image(self.images.len());
         let canonical_path_name = PathBuf::from(path)
