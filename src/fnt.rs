@@ -248,6 +248,10 @@ impl FntFile {
 
         Ok(output)
     }
+
+    pub fn dependencies(&self) -> Vec<String> {
+        self.pages.iter().map(|page| page.file.clone()).collect()
+    }
 }
 
 fn parse<T: Debug + FromStr>(rhs: &str) -> anyhow::Result<T> {
