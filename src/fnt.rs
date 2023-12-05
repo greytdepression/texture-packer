@@ -1,4 +1,10 @@
-use std::str::FromStr;
+use std::{
+    fmt::{Debug, Display},
+    marker::PhantomData,
+    str::FromStr,
+};
+
+use anyhow::Context;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FntFile {
@@ -67,18 +73,23 @@ pub struct FntCommon {
 impl FntPage {
     const KEYWORD: &'static str = "page";
 
-    fn try_parse(line: &str) -> Result<Self, String> {
+    fn try_parse(line: &str) -> anyhow::Result<Self> {
         let mut output = Self::default();
 
         parse_line(line, |lhs, rhs| {
             match lhs {
-                "id" => output.id = parse(rhs)?,
-                "file" => output.file = parse_string(rhs)?,
-                _ => panic!("Unrecognized attribute '{lhs}' in fnt page declaration."),
+                "id" => output.id = parse(rhs).context("Failed parsing 'id' attribute")?,
+                "file" => {
+                    output.file = parse_string(rhs).context("Failed parsing 'file' attribute")?
+                }
+                _ => FntParserError::<()>::UnknownAttribute
+                    .raise()
+                    .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
             }
 
             Ok(())
-        })?;
+        })
+        .context("Failed parsing FNT page")?;
 
         Ok(output)
     }
@@ -87,25 +98,36 @@ impl FntPage {
 impl FntChar {
     const KEYWORD: &'static str = "char";
 
-    fn try_parse(line: &str) -> Result<Self, String> {
+    fn try_parse(line: &str) -> anyhow::Result<Self> {
         let mut output = Self::default();
         parse_line(line, |lhs, rhs| {
             match lhs {
-                "id" => output.id = parse(rhs)?,
-                "x" => output.x = parse(rhs)?,
-                "y" => output.y = parse(rhs)?,
-                "width" => output.width = parse(rhs)?,
-                "height" => output.height = parse(rhs)?,
-                "xoffset" => output.x_offset = parse(rhs)?,
-                "yoffset" => output.y_offset = parse(rhs)?,
-                "xadvance" => output.x_advance = parse(rhs)?,
-                "page" => output.page = parse(rhs)?,
-                "chnl" => output.chnl = parse(rhs)?,
-                _ => panic!("Unrecognized attribute '{lhs}' in fnt char declaration."),
+                "id" => output.id = parse(rhs).context("Failed parsing 'id' attribute")?,
+                "x" => output.x = parse(rhs).context("Failed parsing 'x' attribute")?,
+                "y" => output.y = parse(rhs).context("Failed parsing 'y' attribute")?,
+                "width" => output.width = parse(rhs).context("Failed parsing 'width' attribute")?,
+                "height" => {
+                    output.height = parse(rhs).context("Failed parsing 'height' attribute")?
+                }
+                "xoffset" => {
+                    output.x_offset = parse(rhs).context("Failed parsing 'xoffset' attribute")?
+                }
+                "yoffset" => {
+                    output.y_offset = parse(rhs).context("Failed parsing 'yoffset' attribute")?
+                }
+                "xadvance" => {
+                    output.x_advance = parse(rhs).context("Failed parsing 'xadvance' attribute")?
+                }
+                "page" => output.page = parse(rhs).context("Failed parsing 'page' attribute")?,
+                "chnl" => output.chnl = parse(rhs).context("Failed parsing 'chnl' attribute")?,
+                _ => FntParserError::<()>::UnknownAttribute
+                    .raise()
+                    .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
             }
 
             Ok(())
-        })?;
+        })
+        .context("Failed parsing FNT char")?;
 
         Ok(output)
     }
@@ -114,26 +136,48 @@ impl FntChar {
 impl FntInfo {
     const KEYWORD: &'static str = "info";
 
-    fn try_parse(line: &str) -> Result<Self, String> {
+    fn try_parse(line: &str) -> anyhow::Result<Self> {
         let mut output = Self::default();
         parse_line(line, |lhs, rhs| {
             match lhs {
-                "face" => output.face = parse_string(rhs)?,
-                "size" => output.size = parse(rhs)?,
-                "bold" => output.bold = parse(rhs)?,
-                "italic" => output.italic = parse(rhs)?,
-                "charset" => output.charset = parse_string(rhs)?,
-                "unicode" => output.unicode = parse(rhs)?,
-                "stretchH" => output.stretch_h = parse(rhs)?,
-                "smooth" => output.smooth = parse(rhs)?,
-                "aa" => output.aa = parse(rhs)?,
-                "padding" => output.padding = parse_array(rhs)?,
-                "spacing" => output.spacing = parse_array(rhs)?,
-                _ => panic!("Unrecognized attribute '{lhs}' in fnt info declaration."),
+                "face" => {
+                    output.face = parse_string(rhs).context("Failed parsing 'face' attribute")?
+                }
+                "size" => output.size = parse(rhs).context("Failed parsing 'size' attribute")?,
+                "bold" => output.bold = parse(rhs).context("Failed parsing 'bold' attribute")?,
+                "italic" => {
+                    output.italic = parse(rhs).context("Failed parsing 'italic' attribute")?
+                }
+                "charset" => {
+                    output.charset =
+                        parse_string(rhs).context("Failed parsing 'charset' attribute")?
+                }
+                "unicode" => {
+                    output.unicode = parse(rhs).context("Failed parsing 'unicode' attribute")?
+                }
+                "stretchH" => {
+                    output.stretch_h = parse(rhs).context("Failed parsing 'stretchH' attribute")?
+                }
+                "smooth" => {
+                    output.smooth = parse(rhs).context("Failed parsing 'smooth' attribute")?
+                }
+                "aa" => output.aa = parse(rhs).context("Failed parsing 'aa' attribute")?,
+                "padding" => {
+                    output.padding =
+                        parse_array(rhs).context("Failed parsing 'padding' attribute")?
+                }
+                "spacing" => {
+                    output.spacing =
+                        parse_array(rhs).context("Failed parsing 'spacing' attribute")?
+                }
+                _ => FntParserError::<()>::UnknownAttribute
+                    .raise()
+                    .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
             }
 
             Ok(())
-        })?;
+        })
+        .context("Failed parsing FNT info")?;
 
         Ok(output)
     }
@@ -142,41 +186,65 @@ impl FntInfo {
 impl FntCommon {
     const KEYWORD: &'static str = "common";
 
-    fn try_parse(line: &str) -> Result<Self, String> {
+    fn try_parse(line: &str) -> anyhow::Result<Self> {
         let mut output = Self::default();
         parse_line(line, |lhs, rhs| {
             match lhs {
-                "lineHeight" => output.line_height = parse(rhs)?,
-                "base" => output.base = parse(rhs)?,
-                "scaleW" => output.scale_w = parse(rhs)?,
-                "scaleH" => output.scale_h = parse(rhs)?,
-                "pages" => output.num_pages = parse(rhs)?,
-                "packed" => output.packed = parse(rhs)?,
-                _ => panic!("Unrecognized attribute '{lhs}' in fnt info declaration."),
+                "lineHeight" => {
+                    output.line_height =
+                        parse(rhs).context("Failed parsing 'lineHeight' attribute")?
+                }
+                "base" => output.base = parse(rhs).context("Failed parsing 'base' attribute")?,
+                "scaleW" => {
+                    output.scale_w = parse(rhs).context("Failed parsing 'scaleW' attribute")?
+                }
+                "scaleH" => {
+                    output.scale_h = parse(rhs).context("Failed parsing 'scaleH' attribute")?
+                }
+                "pages" => {
+                    output.num_pages = parse(rhs).context("Failed parsing 'pages' attribute")?
+                }
+                "packed" => {
+                    output.packed = parse(rhs).context("Failed parsing 'packed' attribute")?
+                }
+                _ => FntParserError::<()>::UnknownAttribute
+                    .raise()
+                    .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
             }
 
             Ok(())
-        })?;
+        })
+        .context("Failed parsing FNT common")?;
 
         Ok(output)
     }
 }
 
 impl FntFile {
-    pub fn try_parse(file_contents: &str) -> Result<Self, String> {
+    pub fn try_parse(file_contents: &str) -> anyhow::Result<Self> {
         let mut output = Self::default();
 
-        for line in file_contents.lines() {
+        for (num, line) in file_contents.lines().enumerate() {
             let (ident, data) = consume_until_space(line);
 
+            let ctxt = || format!("Failed parsing line {}", num + 1);
+
             match ident {
-                FntInfo::KEYWORD => output.info = FntInfo::try_parse(data)?,
-                FntCommon::KEYWORD => output.common = FntCommon::try_parse(data)?,
-                FntPage::KEYWORD => output.pages.push(FntPage::try_parse(data)?),
+                FntInfo::KEYWORD => output.info = FntInfo::try_parse(data).with_context(ctxt)?,
+                FntCommon::KEYWORD => {
+                    output.common = FntCommon::try_parse(data).with_context(ctxt)?
+                }
+                FntPage::KEYWORD => output
+                    .pages
+                    .push(FntPage::try_parse(data).with_context(ctxt)?),
                 "chars" => {} // ignore
-                FntChar::KEYWORD => output.chars.push(FntChar::try_parse(data)?),
+                FntChar::KEYWORD => output
+                    .chars
+                    .push(FntChar::try_parse(data).with_context(ctxt)?),
                 "kernings" => {} // ignore for now
-                _ => eprintln!("fnt::FntFile: Unrecognized keyword '{ident}' in fnt declaration."),
+                _ => FntParserError::<()>::UnknownAttribute
+                    .raise()
+                    .with_context(|| format!("Encountered unknown attribute `{ident}`"))?,
             }
         }
 
@@ -184,21 +252,23 @@ impl FntFile {
     }
 }
 
-fn parse<T: FromStr>(rhs: &str) -> Result<T, String> {
-    rhs.parse().map_err(|_| {
-        format!(
-            "fnt::parse(): Encountered error trying to parse `{rhs}` as {}.",
-            std::any::type_name::<T>(),
-        )
-    })
+fn parse<T: Debug + FromStr + 'static>(rhs: &str) -> anyhow::Result<T> {
+    rhs.parse::<T>()
+        .map_err(|_| FntParserError::<T>::ParseError(PhantomData))
+        .with_context(|| {
+            format!(
+                "Failed parsing literal `{rhs}` as {}",
+                std::any::type_name::<T>()
+            )
+        })
 }
 
-fn parse_array<T: FromStr + Default + Copy, const N: usize>(
+fn parse_array<T: FromStr + Default + Copy + Debug + 'static, const N: usize>(
     mut rhs: &str,
-) -> Result<[T; N], String> {
+) -> anyhow::Result<[T; N]> {
     let mut output = [T::default(); N];
 
-    let original_str = rhs;
+    let original = rhs;
 
     let mut index = 0;
     while !rhs.is_empty() && index < N {
@@ -210,17 +280,22 @@ fn parse_array<T: FromStr + Default + Copy, const N: usize>(
     }
 
     if index != N || !rhs.is_empty() {
-        return Err(format!(
-            "fnt::parse_array(): The string `{original_str}` does not have {N} values."
-        ));
+        FntParserError::<[T; N]>::ArrayParsingError
+            .raise()
+            .with_context(|| {
+                format!(
+                    "Failed parsing literal `{original}` as array {}",
+                    std::any::type_name::<[T; N]>()
+                )
+            })?
     }
 
     Ok(output)
 }
 
-fn parse_line<F>(mut line: &str, mut callback: F) -> Result<(), String>
+fn parse_line<F>(mut line: &str, mut callback: F) -> anyhow::Result<()>
 where
-    F: FnMut(&str, &str) -> Result<(), String>,
+    F: FnMut(&str, &str) -> anyhow::Result<()>,
 {
     while !line.is_empty() {
         let (expr, next) = consume_until_space(line);
@@ -236,16 +311,12 @@ where
     Ok(())
 }
 
-fn parse_string(value: &str) -> Result<String, String> {
+fn parse_string(value: &str) -> anyhow::Result<String> {
     Ok(value
         .strip_prefix('"')
-        .ok_or(format!(
-            "fnt::parse_string(): String value needs to start with '\"', but `{value}` does not!"
-        ))?
+        .ok_or(FntParserError::<String>::ParseError(PhantomData))?
         .strip_suffix('"')
-        .ok_or(format!(
-            "parse_string(): String value needs to end with '\"', but `{value}` does not!"
-        ))?
+        .ok_or(FntParserError::<String>::ParseError(PhantomData))?
         .to_string())
 }
 
@@ -274,38 +345,93 @@ fn try_split_equality(expr: &str) -> Option<(&str, &str)> {
 
     Some((&expr[0..index], &expr[index + 1..]))
 }
+
 #[cfg(test)]
 mod tests {
     use super::{consume_until_space, FntFile};
 
     #[test]
     fn test_consume_until_space() {
-        let mut line =
-            "char id=0       x=0    y=0    width=7    height=13   xoffset=-1   yoffset=-1";
+        let line = "char id=0       x=0    y=0    width=7    height=13   xoffset=-1   yoffset=-1";
 
-        while !line.is_empty() {
-            let (lhs, rhs) = consume_until_space(line);
+        let (lhs, line) = consume_until_space(line);
+        assert_eq!(lhs, "char");
+        let (lhs, line) = consume_until_space(line);
+        assert_eq!(lhs, "id=0");
+        let (lhs, line) = consume_until_space(line);
+        assert_eq!(lhs, "x=0");
+        let (lhs, line) = consume_until_space(line);
+        assert_eq!(lhs, "y=0");
+        let (lhs, line) = consume_until_space(line);
+        assert_eq!(lhs, "width=7");
+        let (lhs, line) = consume_until_space(line);
+        assert_eq!(lhs, "height=13");
+        let (lhs, line) = consume_until_space(line);
+        assert_eq!(lhs, "xoffset=-1");
+        let (lhs, line) = consume_until_space(line);
+        assert_eq!(lhs, "yoffset=-1");
 
-            println!("`{}`", lhs);
-
-            line = rhs;
-        }
+        assert!(line.is_empty());
     }
 
     #[test]
-    fn test_parse_file() -> Result<(), String> {
+    fn test_parse_file() -> anyhow::Result<()> {
         let test_file = include_str!("../assets/m5x7.fnt");
 
-        let fnt_file = FntFile::try_parse(test_file)?;
-
-        dbg!(
-            &fnt_file.info,
-            &fnt_file.common,
-            &fnt_file.pages,
-            &fnt_file.chars[..5],
-            fnt_file.chars.len(),
-        );
+        let _ = FntFile::try_parse(test_file)?;
 
         Ok(())
+    }
+}
+
+//--------------------------------------------------
+// Errors
+//--------------------------------------------------
+
+#[derive(Debug, Clone, Copy)]
+pub enum FntParserError<T: Debug> {
+    ParseError(PhantomData<T>),
+    ArrayParsingError,
+    UnknownAttribute,
+}
+
+impl<T: Debug> FntParserError<T> {
+    pub fn raise(self) -> Result<(), Self> {
+        Err(self)
+    }
+}
+
+unsafe impl<T: Debug> Send for FntParserError<T> {}
+unsafe impl<T: Debug> Sync for FntParserError<T> {}
+
+impl<T: Debug> std::error::Error for FntParserError<T> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+
+    fn description(&self) -> &str {
+        "description() is deprecated; use Display"
+    }
+
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        self.source()
+    }
+
+    fn provide<'a>(&'a self, request: &mut std::error::Request<'a>) {}
+}
+
+impl<T: Debug> Display for FntParserError<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            FntParserError::ParseError(_) => {
+                write!(f, "Failed parsing {}", std::any::type_name::<T>())
+            }
+            FntParserError::ArrayParsingError => write!(
+                f,
+                "Failed parsing {} due to incompatible input size",
+                std::any::type_name::<T>(),
+            ),
+            FntParserError::UnknownAttribute => write!(f, "Unknown attribute"),
+        }
     }
 }

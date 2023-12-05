@@ -1,3 +1,5 @@
+#![feature(error_generic_member_access)]
+
 mod fnt;
 
 const FONT_DATA: &'static str = include_str!("../assets/m5x7.fnt");
