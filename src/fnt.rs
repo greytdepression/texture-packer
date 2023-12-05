@@ -1,10 +1,8 @@
-use std::{
-    fmt::{Debug, Display},
-    marker::PhantomData,
-    str::FromStr,
-};
+use std::{fmt::Debug, str::FromStr};
 
 use anyhow::Context;
+
+use crate::error::Ewwow;
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FntFile {
@@ -82,7 +80,7 @@ impl FntPage {
                 "file" => {
                     output.file = parse_string(rhs).context("Failed parsing 'file' attribute")?
                 }
-                _ => FntParserError::<()>::UnknownAttribute
+                _ => Ewwow
                     .raise()
                     .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
             }
@@ -120,7 +118,7 @@ impl FntChar {
                 }
                 "page" => output.page = parse(rhs).context("Failed parsing 'page' attribute")?,
                 "chnl" => output.chnl = parse(rhs).context("Failed parsing 'chnl' attribute")?,
-                _ => FntParserError::<()>::UnknownAttribute
+                _ => Ewwow
                     .raise()
                     .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
             }
@@ -170,7 +168,7 @@ impl FntInfo {
                     output.spacing =
                         parse_array(rhs).context("Failed parsing 'spacing' attribute")?
                 }
-                _ => FntParserError::<()>::UnknownAttribute
+                _ => Ewwow
                     .raise()
                     .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
             }
@@ -207,7 +205,7 @@ impl FntCommon {
                 "packed" => {
                     output.packed = parse(rhs).context("Failed parsing 'packed' attribute")?
                 }
-                _ => FntParserError::<()>::UnknownAttribute
+                _ => Ewwow
                     .raise()
                     .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
             }
@@ -242,7 +240,7 @@ impl FntFile {
                     .chars
                     .push(FntChar::try_parse(data).with_context(ctxt)?),
                 "kernings" => {} // ignore for now
-                _ => FntParserError::<()>::UnknownAttribute
+                _ => Ewwow
                     .raise()
                     .with_context(|| format!("Encountered unknown attribute `{ident}`"))?,
             }
@@ -252,18 +250,16 @@ impl FntFile {
     }
 }
 
-fn parse<T: Debug + FromStr + 'static>(rhs: &str) -> anyhow::Result<T> {
-    rhs.parse::<T>()
-        .map_err(|_| FntParserError::<T>::ParseError(PhantomData))
-        .with_context(|| {
-            format!(
-                "Failed parsing literal `{rhs}` as {}",
-                std::any::type_name::<T>()
-            )
-        })
+fn parse<T: Debug + FromStr>(rhs: &str) -> anyhow::Result<T> {
+    rhs.parse::<T>().map_err(|_| Ewwow).with_context(|| {
+        format!(
+            "Failed parsing literal `{rhs}` as {}",
+            std::any::type_name::<T>()
+        )
+    })
 }
 
-fn parse_array<T: FromStr + Default + Copy + Debug + 'static, const N: usize>(
+fn parse_array<T: FromStr + Default + Copy + Debug, const N: usize>(
     mut rhs: &str,
 ) -> anyhow::Result<[T; N]> {
     let mut output = [T::default(); N];
@@ -280,14 +276,12 @@ fn parse_array<T: FromStr + Default + Copy + Debug + 'static, const N: usize>(
     }
 
     if index != N || !rhs.is_empty() {
-        FntParserError::<[T; N]>::ArrayParsingError
-            .raise()
-            .with_context(|| {
-                format!(
-                    "Failed parsing literal `{original}` as array {}",
-                    std::any::type_name::<[T; N]>()
-                )
-            })?
+        Ewwow.raise().with_context(|| {
+            format!(
+                "Failed parsing literal `{original}` as array {}",
+                std::any::type_name::<[T; N]>()
+            )
+        })?
     }
 
     Ok(output)
@@ -314,9 +308,11 @@ where
 fn parse_string(value: &str) -> anyhow::Result<String> {
     Ok(value
         .strip_prefix('"')
-        .ok_or(FntParserError::<String>::ParseError(PhantomData))?
+        .ok_or(Ewwow)
+        .with_context(|| format!("Failed to parse `{value}` as a string: misses opening \""))?
         .strip_suffix('"')
-        .ok_or(FntParserError::<String>::ParseError(PhantomData))?
+        .ok_or(Ewwow)
+        .with_context(|| format!("Failed to parse `{value}` as a string: misses closing \""))?
         .to_string())
 }
 
@@ -381,57 +377,5 @@ mod tests {
         let _ = FntFile::try_parse(test_file)?;
 
         Ok(())
-    }
-}
-
-//--------------------------------------------------
-// Errors
-//--------------------------------------------------
-
-#[derive(Debug, Clone, Copy)]
-pub enum FntParserError<T: Debug> {
-    ParseError(PhantomData<T>),
-    ArrayParsingError,
-    UnknownAttribute,
-}
-
-impl<T: Debug> FntParserError<T> {
-    pub fn raise(self) -> Result<(), Self> {
-        Err(self)
-    }
-}
-
-unsafe impl<T: Debug> Send for FntParserError<T> {}
-unsafe impl<T: Debug> Sync for FntParserError<T> {}
-
-impl<T: Debug> std::error::Error for FntParserError<T> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-
-    fn description(&self) -> &str {
-        "description() is deprecated; use Display"
-    }
-
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
-    }
-
-    fn provide<'a>(&'a self, request: &mut std::error::Request<'a>) {}
-}
-
-impl<T: Debug> Display for FntParserError<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            FntParserError::ParseError(_) => {
-                write!(f, "Failed parsing {}", std::any::type_name::<T>())
-            }
-            FntParserError::ArrayParsingError => write!(
-                f,
-                "Failed parsing {} due to incompatible input size",
-                std::any::type_name::<T>(),
-            ),
-            FntParserError::UnknownAttribute => write!(f, "Unknown attribute"),
-        }
     }
 }
