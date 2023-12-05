@@ -43,6 +43,14 @@ impl Sources {
         }
     }
 
+    pub fn find_id(&self, alias: &String) -> anyhow::Result<SourceId> {
+        self.source_file_aliases
+            .get(alias)
+            .map(|&id| id)
+            .ok_or(Ewwow)
+            .with_context(|| format!("Could not resolve source file alias '{alias}'"))
+    }
+
     pub fn get_image(&self, id: SourceId) -> anyhow::Result<&image::RgbaImage> {
         let index = match id {
             SourceId::Image(index) => index,
