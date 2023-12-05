@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::Context;
+use image::{GenericImageView, SubImage};
 
 use crate::{
     error::Ewwow,
@@ -245,5 +246,35 @@ impl Sources {
         self.source_file_aliases.insert(file_name, id);
 
         Ok(id)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceSprite {
+    pub image_source_id: SourceId,
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
+impl SourceSprite {
+    pub fn get_image<'s>(
+        &self,
+        srcs: &'s Sources,
+    ) -> anyhow::Result<SubImage<&'s image::RgbaImage>> {
+        let atlas = srcs.get_image(self.image_source_id).with_context(|| {
+            format!(
+                "Failed to retrieve source sprite atlas image {:?}",
+                self.image_source_id
+            )
+        })?;
+
+        Ok(atlas.view(
+            self.x as u32,
+            self.y as u32,
+            self.width as u32,
+            self.height as u32,
+        ))
     }
 }

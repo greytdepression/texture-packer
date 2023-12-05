@@ -2,7 +2,10 @@ use std::{fmt::Debug, str::FromStr};
 
 use anyhow::Context;
 
-use crate::error::Ewwow;
+use crate::{
+    error::Ewwow,
+    sources::{SourceSprite, Sources},
+};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct FntFile {
@@ -251,6 +254,40 @@ impl FntFile {
 
     pub fn dependencies(&self) -> Vec<String> {
         self.pages.iter().map(|page| page.file.clone()).collect()
+    }
+
+    pub fn get_character_sprite<'s>(
+        &self,
+        char_code: u32,
+        sources: &'s Sources,
+    ) -> anyhow::Result<SourceSprite> {
+        let self_name = &self.info.face;
+
+        let fnt_char = self
+            .chars
+            .iter()
+            .find(|&ch| ch.id == char_code)
+            .ok_or(Ewwow)
+            .with_context(|| {
+                format!(
+                "Failed to load char info as font '{self_name}' does not contain char #{char_code}"
+            )
+            })?;
+
+        let page = fnt_char.page;
+        let page_image_file_name = &self.pages[page as usize].file;
+
+        let page_image_id = sources.find_id(page_image_file_name).with_context(|| {
+            format!("Failed to retrieve page image {page} for fnt '{self_name}'")
+        })?;
+
+        Ok(SourceSprite {
+            image_source_id: page_image_id,
+            x: fnt_char.x,
+            y: fnt_char.y,
+            width: fnt_char.width,
+            height: fnt_char.height,
+        })
     }
 }
 
