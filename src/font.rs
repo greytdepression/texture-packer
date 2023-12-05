@@ -78,6 +78,27 @@ fn char_code_as_printable(code: u32) -> char {
     }
 }
 
+impl Atlasable for Font {
+    fn get_sprite_sizes(&self) -> Vec<ISize> {
+        self.chars
+            .iter()
+            .map(|ch| ISize::new(ch.sprite.width, ch.sprite.height))
+            .collect()
+    }
+
+    fn get_sprite_texture(&self, index: usize, srcs: &Sources) -> anyhow::Result<image::RgbaImage> {
+        Ok(self.chars[index]
+            .get_sprite_texture_view(srcs)
+            .with_context(|| {
+                format!(
+                    "Failed to get the texture view of a character sprite #{} of font '{}'",
+                    self.chars[index].char_code, &self.name
+                )
+            })?
+            .to_image())
+    }
+}
+
 impl CharacterSprite {
     pub fn get_sprite_texture_view<'s>(
         &self,
