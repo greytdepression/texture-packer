@@ -82,7 +82,7 @@ impl FntPage {
                 }
                 _ => Ewwow
                     .raise()
-                    .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
+                    .with_context(|| format!("Encountered unknown attribute '{lhs}'"))?,
             }
 
             Ok(())
@@ -120,7 +120,7 @@ impl FntChar {
                 "chnl" => output.chnl = parse(rhs).context("Failed parsing 'chnl' attribute")?,
                 _ => Ewwow
                     .raise()
-                    .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
+                    .with_context(|| format!("Encountered unknown attribute '{lhs}'"))?,
             }
 
             Ok(())
@@ -170,7 +170,7 @@ impl FntInfo {
                 }
                 _ => Ewwow
                     .raise()
-                    .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
+                    .with_context(|| format!("Encountered unknown attribute '{lhs}'"))?,
             }
 
             Ok(())
@@ -207,7 +207,7 @@ impl FntCommon {
                 }
                 _ => Ewwow
                     .raise()
-                    .with_context(|| format!("Encountered unknown attribute `{lhs}`"))?,
+                    .with_context(|| format!("Encountered unknown attribute '{lhs}'"))?,
             }
 
             Ok(())
