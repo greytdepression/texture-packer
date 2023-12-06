@@ -1,12 +1,6 @@
-use std::collections::BTreeMap;
-
 use anyhow::Context;
 use glam::IVec2;
 use image::{GenericImage, RgbaImage};
-use rectangle_pack::{
-    contains_smallest_box, pack_rects, volume_heuristic, GroupedRectsToPlace, RectToInsert,
-    TargetBin,
-};
 
 use crate::sources::Sources;
 
@@ -92,6 +86,14 @@ impl IMargins {
     pub fn uniform(m: i32) -> Self {
         Self::new(m, m, m, m)
     }
+
+    pub fn vert(self) -> i32 {
+        self.top + self.bottom
+    }
+
+    pub fn hori(self) -> i32 {
+        self.left + self.right
+    }
 }
 
 pub struct TextureAtlas {
@@ -138,7 +140,7 @@ impl TextureAtlas {
         // Get a guess for what the size of the atlas should be
         let area_sqrt = (area as f32).sqrt();
 
-        self.image_side_len_guess = (area_sqrt.ceil() as u32).next_power_of_two();
+        self.image_side_len_guess = (area_sqrt.ceil() as u32).next_power_of_two() / 2;
 
         println!(
             "Loaded {} sprite sizes. Guess for image side len is {}.",
@@ -148,69 +150,28 @@ impl TextureAtlas {
     }
 
     pub fn pack(&mut self) {
-        let mut rects_to_place = GroupedRectsToPlace::<_, i32>::new();
-
-        for &(asset_id, sprite_id, size) in self.sprite_sizes.iter() {
-            let size = size.grow(self.padding);
-
-            rects_to_place.push_rect(
-                (asset_id, sprite_id),
-                None,
-                RectToInsert::new(size.width as u32, size.height as u32, 1),
-            )
-        }
-
-        let mut width = self.image_side_len_guess;
-        let mut height = self.image_side_len_guess;
+        let mut width = self.image_side_len_guess as i32;
+        let mut height = self.image_side_len_guess as i32;
 
         loop {
             if width > 1024 {
                 panic!("Not terminating");
             }
 
-            let mut target_bin = BTreeMap::new();
-            target_bin.insert(0, TargetBin::new(width, height, 1));
-
-            let placements = pack_rects(
-                &rects_to_place,
-                &mut target_bin,
-                &volume_heuristic,
-                &contains_smallest_box,
-            );
-
-            if placements.is_err() {
-                // rectangle-pack seems to prefer long images
+            if !self.try_pack(width, height) {
                 if width == height {
-                    height *= 2;
-                } else {
                     width *= 2;
+                } else {
+                    height *= 2;
                 }
 
-                assert!(width <= height);
+                assert!(width >= height);
                 continue;
             }
 
-            let Ok(placements) = placements else {
-                unreachable!();
-            };
-
-            println!("Successfully placed rects in atlas of size {width}x{height}");
-
             self.final_image_bounds = ISize::new(width as i32, height as i32);
 
-            for (&(asset_id, sprite_id), &(_, loc)) in placements.packed_locations().iter() {
-                self.sprite_bounds.push((
-                    asset_id,
-                    sprite_id,
-                    IRect::new(
-                        loc.x() as i32,
-                        loc.y() as i32,
-                        loc.width() as i32,
-                        loc.height() as i32,
-                    )
-                    .shrink(self.padding),
-                ));
-            }
+            println!("Final image size is {width}x{height}");
 
             break;
         }
@@ -241,5 +202,64 @@ impl TextureAtlas {
         }
 
         Ok(output)
+    }
+
+    fn try_pack(&mut self, width: i32, height: i32) -> bool {
+        self.sprite_bounds.clear();
+
+        // Sort the sprites by height
+        self.sprite_sizes.sort_by(|&(_, _, a_size), &(_, _, b_size)| {
+            // Use reverse cmp to get decreasing heights
+            b_size.height.cmp(&a_size.height)
+        });
+
+        let mut current_x: i32 = 0;
+        let mut current_y: i32 = 0;
+        let mut next_y: i32 = 0;
+
+        let mut index = 0;
+
+        while index < self.sprite_sizes.len() {
+
+            let (i1, i2, size) = self.sprite_sizes[index];
+
+            // Sanity check -- if we didn't check this we could get an endless loop
+            if size.width > width {
+                return false;
+            }
+
+            // Start of a new row
+            if current_x == 0 {
+                // Check that the sprites actually fit in the row
+                if current_y + size.height + self.padding.vert() > height {
+                    return false;
+                }
+
+                next_y = current_y + size.height + self.padding.vert();
+            }
+
+            // Check that this sprite still fits in the row
+            if current_x + self.padding.hori() + size.width > width {
+                current_x = 0;
+                current_y = next_y;
+                continue;
+            }
+
+            // The sprite fits!
+            let bounds = IRect::new(
+                current_x + self.padding.left,
+                current_y + self.padding.top,
+                size.width,
+                size.height,
+            );
+
+            self.sprite_bounds.push((i1, i2, bounds));
+
+            current_x += size.width + self.padding.hori();
+
+            index += 1;
+        }
+
+        true
     }
 }
