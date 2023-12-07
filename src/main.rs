@@ -12,6 +12,7 @@ mod math;
 mod outputs;
 mod sources;
 mod texture_atlas;
+mod font_shared;
 
 fn main() -> anyhow::Result<()> {
     let mut sources = sources::Sources::new();

@@ -5,13 +5,8 @@ use crate::{
     error::Ewwow,
     math::ISize,
     sources::{SourceId, SourceSprite, Sources},
-    texture_atlas::Atlasable,
+    texture_atlas::Atlasable, font_shared,
 };
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TextCharacterAnimation {
-    NoAnimation,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CharacterSprite {
@@ -26,7 +21,7 @@ pub struct CharacterSprite {
 #[derive(Debug, Clone)]
 pub struct FontIntermediate {
     pub name: String,
-    pub animation: TextCharacterAnimation,
+    pub animation: font_shared::TextCharacterAnimation,
     pub num_frames: u32,
     pub line_height: i32,
     pub base: i32,
@@ -61,7 +56,7 @@ impl FontIntermediate {
 
         Ok(Self {
             name: fnt.info.face.clone(),
-            animation: TextCharacterAnimation::NoAnimation,
+            animation: font_shared::TextCharacterAnimation::NoAnimation,
             num_frames: 0,
             line_height: fnt.common.line_height,
             base: fnt.common.base,
