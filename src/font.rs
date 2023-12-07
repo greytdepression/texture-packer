@@ -23,7 +23,7 @@ pub struct CharacterSprite {
 }
 
 #[derive(Debug, Clone)]
-pub struct Font {
+pub struct FontIntermediate {
     pub name: String,
     pub animation: TextCharacterAnimation,
     pub num_frames: u32,
@@ -32,7 +32,7 @@ pub struct Font {
     pub chars: Vec<CharacterSprite>,
 }
 
-impl Font {
+impl FontIntermediate {
     pub fn from_fnt(fnt_src_id: SourceId, srcs: &Sources) -> anyhow::Result<Self> {
         let fnt = srcs
             .get_fnt(fnt_src_id)
@@ -151,7 +151,7 @@ fn char_code_as_printable(code: u32) -> char {
     }
 }
 
-impl Atlasable for Font {
+impl Atlasable for FontIntermediate {
     fn get_sprite_sizes(&self) -> Vec<ISize> {
         self.chars
             .iter()
