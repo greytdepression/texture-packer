@@ -216,10 +216,11 @@ impl TextureAtlas {
         self.sprite_bounds.clear();
 
         // Sort the sprites by height
-        self.sprite_sizes.sort_by(|&(_, _, a_size), &(_, _, b_size)| {
-            // Use reverse cmp to get decreasing heights
-            b_size.height.cmp(&a_size.height)
-        });
+        self.sprite_sizes
+            .sort_by(|&(_, _, a_size), &(_, _, b_size)| {
+                // Use reverse cmp to get decreasing heights
+                b_size.height.cmp(&a_size.height)
+            });
 
         let mut current_x: i32 = 0;
         let mut current_y: i32 = 0;
@@ -228,7 +229,6 @@ impl TextureAtlas {
         let mut index = 0;
 
         while index < self.sprite_sizes.len() {
-
             let (i1, i2, size) = self.sprite_sizes[index];
 
             // Sanity check -- if we didn't check this we could get an endless loop
