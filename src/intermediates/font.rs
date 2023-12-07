@@ -5,8 +5,10 @@ use crate::{
     error::Ewwow,
     math::ISize,
     sources::{SourceId, SourceSprite, Sources},
-    texture_atlas::Atlasable, font_shared,
+    font_shared,
 };
+
+use super::texture_atlas::Atlasable;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CharacterSprite {

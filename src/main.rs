@@ -2,8 +2,7 @@
 #![feature(error_generic_member_access)]
 
 use anyhow::Context;
-use intermediates::font;
-use texture_atlas::TextureAtlas;
+use intermediates::{font, texture_atlas::TextureAtlas};
 
 mod error;
 mod inputs;
@@ -11,7 +10,6 @@ mod intermediates;
 mod math;
 mod outputs;
 mod sources;
-mod texture_atlas;
 mod font_shared;
 
 fn main() -> anyhow::Result<()> {
