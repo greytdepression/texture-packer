@@ -1,7 +1,8 @@
 use anyhow::Context;
-use image::SubImage;
+use image::{Rgba, SubImage};
 
 use crate::{
+    error::Ewwow,
     sources::{SourceId, SourceSprite, Sources},
     texture_atlas::{Atlasable, ISize},
 };
@@ -65,6 +66,78 @@ impl Font {
             base: fnt.common.base,
             chars,
         })
+    }
+
+    pub fn render_text(&self, text: &str, srcs: &Sources) -> anyhow::Result<image::RgbaImage> {
+        let mut curr_x = 0;
+        let mut min_y = 0;
+        let mut max_y = 0;
+        let mut max_x = 0;
+
+        // Determine the bounds
+        for ch in text.chars() {
+            let char_code = ch as u32;
+
+            let char_info = self.chars
+                .iter()
+                .find(|&cs| cs.char_code == char_code)
+                .ok_or(Ewwow)
+                .with_context(|| format!(
+                    "Failed to render '{text}' as font '{}' does not have a sprite for '{ch}' (char code #{char_code})",
+                    &self.name
+                ))?;
+
+            let curr_min_y = char_info.y_offset;
+            let curr_max_y = char_info.y_offset + char_info.sprite.height;
+            let curr_max_x = curr_x + char_info.x_offset + char_info.sprite.width;
+
+            min_y = min_y.min(curr_min_y);
+            max_y = max_y.max(curr_max_y);
+            max_x = max_x.max(curr_max_x);
+
+            curr_x += char_info.x_advance;
+        }
+
+        // Make the image buffer
+        let mut buffer: image::ImageBuffer<image::Rgba<u8>, Vec<u8>> =
+            image::RgbaImage::new(max_x as u32, self.line_height as u32);
+
+        // Draw base line
+        let base_line_color = Rgba::<u8>([128, 128, 128, 255]);
+
+        for x in 0..max_x as u32 {
+            if x % 3 != 2 {
+                buffer.put_pixel(x, self.base as u32, base_line_color);
+            }
+        }
+
+        // Paste characters
+        curr_x = 0;
+        for ch in text.chars() {
+            let char_code = ch as u32;
+
+            let char_info = self
+                .chars
+                .iter()
+                .find(|&cs| cs.char_code == char_code)
+                .unwrap();
+
+            let x = (curr_x + char_info.x_offset) as i64;
+            let y = char_info.y_offset as i64;
+
+            let character_img = char_info.sprite
+                .get_image(srcs)
+                .with_context(|| format!(
+                    "Failed to retrieve character sprite image for '{ch}' (code ${char_code}) for font '{}'",
+                    &self.name
+                ))?;
+
+            image::imageops::overlay(&mut buffer, &character_img.to_image(), x, y);
+
+            curr_x += char_info.x_advance;
+        }
+
+        Ok(buffer)
     }
 }
 
