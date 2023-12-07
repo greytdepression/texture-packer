@@ -26,7 +26,7 @@ impl ISize {
     }
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct IRect {
     pub min: IVec2,
     pub max: IVec2,
