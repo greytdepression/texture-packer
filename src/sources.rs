@@ -6,10 +6,7 @@ use std::{
 use anyhow::Context;
 use image::{GenericImageView, SubImage};
 
-use crate::{
-    error::Ewwow,
-    fnt::{self, FntFile},
-};
+use crate::{error::Ewwow, inputs::fnt};
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum SourceId {
@@ -153,7 +150,7 @@ impl Sources {
 
         // Load the file
         let file_contents = std::fs::read_to_string(path)?;
-        let fnt_file = FntFile::try_parse(&file_contents)?;
+        let fnt_file = fnt::FntFile::try_parse(&file_contents)?;
 
         // Register the file in the vec
         let id = SourceId::Fnt(self.fnt_files.len());

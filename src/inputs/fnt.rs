@@ -413,7 +413,7 @@ mod tests {
 
     #[test]
     fn test_parse_file() -> anyhow::Result<()> {
-        let test_file = include_str!("../assets/m5x7.fnt");
+        let test_file = include_str!("../../assets/m5x7.fnt");
 
         let _ = FntFile::try_parse(test_file)?;
 

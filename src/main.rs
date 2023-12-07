@@ -1,11 +1,13 @@
 #![feature(error_generic_member_access)]
 
 use anyhow::Context;
+use intermediates::font;
 use texture_atlas::{IMargins, TextureAtlas};
 
 mod error;
-mod fnt;
-mod font;
+mod inputs;
+mod intermediates;
+mod outputs;
 mod sources;
 mod texture_atlas;
 
