@@ -51,6 +51,14 @@ impl IRect {
         }
     }
 
+    pub fn width(self) -> i32 {
+        self.max.x - self.min.x
+    }
+
+    pub fn height(self) -> i32 {
+        self.max.y - self.min.y
+    }
+
     pub fn uwidth(self) -> u32 {
         (self.max.x - self.min.x) as u32
     }
