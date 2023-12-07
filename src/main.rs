@@ -15,12 +15,17 @@ fn main() -> anyhow::Result<()> {
     let m5x7_id = sources
         .try_load_source("assets/m5x7.fnt")
         .with_context(|| format!("Failed to load 'm5x7.fnt'"))?;
-    let font = font::Font::from_fnt(m5x7_id, &sources)?;
+    let font = font::FontIntermediate::from_fnt(m5x7_id, &sources)?;
+
+    let test_text = font.render_text("Hewwo uwq, gg", &sources)?;
+    test_text
+        .save("test-text.png")
+        .context("Failed to save test text rendering")?;
 
     let m5x7_color_id = sources
         .try_load_source("assets/m5x7-color.fnt")
         .with_context(|| format!("Failed to load 'm5x7-color.fnt'"))?;
-    let font_color = font::Font::from_fnt(m5x7_color_id, &sources)?;
+    let font_color = font::FontIntermediate::from_fnt(m5x7_color_id, &sources)?;
 
     let mut atlas = TextureAtlas::new(
         vec![Box::new(font), Box::new(font_color)],
