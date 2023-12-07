@@ -3,8 +3,9 @@ use image::{Rgba, SubImage};
 
 use crate::{
     error::Ewwow,
+    math::ISize,
     sources::{SourceId, SourceSprite, Sources},
-    texture_atlas::{Atlasable, ISize},
+    texture_atlas::Atlasable,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

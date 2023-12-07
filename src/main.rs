@@ -1,12 +1,14 @@
+#![allow(dead_code)]
 #![feature(error_generic_member_access)]
 
 use anyhow::Context;
 use intermediates::font;
-use texture_atlas::{IMargins, TextureAtlas};
+use texture_atlas::TextureAtlas;
 
 mod error;
 mod inputs;
 mod intermediates;
+mod math;
 mod outputs;
 mod sources;
 mod texture_atlas;
@@ -31,7 +33,7 @@ fn main() -> anyhow::Result<()> {
 
     let mut atlas = TextureAtlas::new(
         vec![Box::new(font), Box::new(font_color)],
-        IMargins::uniform(0),
+        math::IMargins::uniform(0),
     );
 
     atlas.load_sizes();
