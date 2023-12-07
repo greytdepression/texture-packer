@@ -32,8 +32,8 @@ impl ISize {
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct IRect {
-    min: IVec2,
-    max: IVec2,
+    pub min: IVec2,
+    pub max: IVec2,
 }
 
 impl IRect {
