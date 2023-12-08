@@ -22,7 +22,7 @@ impl TextureAtlas {
             sprite_bounds: Vec::new(),
             padding,
             final_image_bounds: ISize::default(),
-            image_side_len_guess: 0,
+            image_side_len_guess: 1,
         }
     }
 
