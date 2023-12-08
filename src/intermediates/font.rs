@@ -3,9 +3,9 @@ use image::{Rgba, SubImage};
 
 use crate::{
     error::Ewwow,
+    font_shared,
     math::ISize,
     sources::{SourceId, SourceSprite, Sources},
-    font_shared,
 };
 
 use super::texture_atlas::Atlasable;
