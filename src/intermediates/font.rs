@@ -59,7 +59,7 @@ impl FontIntermediate {
         Ok(Self {
             name: fnt.info.face.clone(),
             animation: font_shared::TextCharacterAnimation::NoAnimation,
-            num_frames: 0,
+            num_frames: 1,
             line_height: fnt.common.line_height,
             base: fnt.common.base,
             chars,
