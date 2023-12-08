@@ -30,10 +30,9 @@ fn main() -> anyhow::Result<()> {
         .with_context(|| format!("Failed to load 'm5x7-color.fnt'"))?;
     let font_color = font::FontIntermediate::from_fnt(m5x7_color_id, &sources)?;
 
-    let mut atlas = TextureAtlas::new(
-        vec![Box::new(font), Box::new(font_color)],
-        math::IMargins::uniform(0),
-    );
+    let mut atlas = TextureAtlas::new(math::IMargins::uniform(0));
+    atlas.with_font(font);
+    atlas.with_font(font_color);
 
     atlas.load_sizes();
     atlas.pack();

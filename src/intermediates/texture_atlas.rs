@@ -1,26 +1,23 @@
 use anyhow::Context;
 use image::{GenericImage, RgbaImage};
 
-use crate::{math::*, sources::Sources};
+use crate::{error::Ewwow, math::*, sources::Sources};
 
-pub trait Atlasable {
-    fn get_sprite_sizes(&self) -> Vec<ISize>;
-    fn get_sprite_texture(&self, index: usize, srcs: &Sources) -> anyhow::Result<image::RgbaImage>;
-}
+use super::font::FontIntermediate;
 
 pub struct TextureAtlas {
-    pub assets: Vec<Box<dyn Atlasable>>,
+    pub fonts: Vec<FontIntermediate>,
     pub sprite_sizes: Vec<(usize, usize, ISize)>,
     pub sprite_bounds: Vec<(usize, usize, IRect)>,
     pub padding: IMargins,
-    final_image_bounds: ISize,
+    pub final_image_bounds: ISize,
     image_side_len_guess: u32,
 }
 
 impl TextureAtlas {
-    pub fn new(assets: Vec<Box<dyn Atlasable>>, padding: IMargins) -> Self {
+    pub fn new(padding: IMargins) -> Self {
         Self {
-            assets,
+            fonts: vec![],
             sprite_sizes: Vec::new(),
             sprite_bounds: Vec::new(),
             padding,
@@ -29,15 +26,22 @@ impl TextureAtlas {
         }
     }
 
+    pub fn with_font(&mut self, font: FontIntermediate) {
+        self.fonts.push(font);
+    }
+
     pub fn load_sizes(&mut self) {
+        self.sprite_sizes.clear();
+
         let mut area = 0;
 
-        self.sprite_sizes = self
-            .assets
+        // Font asset indices start at 0
+        let mut font_sizes: Vec<_> = self
+            .fonts
             .iter()
             .enumerate()
-            .flat_map(|(asset_index, atl)| {
-                atl.get_sprite_sizes()
+            .flat_map(|(asset_index, font)| {
+                font.get_sprite_sizes()
                     .iter()
                     .enumerate()
                     .map(|(sprite_index, size)| {
@@ -48,6 +52,10 @@ impl TextureAtlas {
                     .collect::<Vec<_>>()
             })
             .collect();
+
+        // The next type of asset's asset indices start at `fonts.len()`
+
+        self.sprite_sizes.append(&mut font_sizes);
 
         // Get a guess for what the size of the atlas should be
         let area_sqrt = (area as f32).sqrt();
@@ -89,6 +97,30 @@ impl TextureAtlas {
         }
     }
 
+    fn get_asset_sprite_texture(
+        &self,
+        asset_id: usize,
+        sprite_id: usize,
+        srcs: &Sources,
+    ) -> anyhow::Result<image::RgbaImage> {
+        // The first `self.fonts.len()` asset ids refer to fonts
+        if asset_id < self.fonts.len() {
+            return self.fonts[asset_id]
+                .get_sprite_texture(sprite_id, srcs)
+                .with_context(|| {
+                    format!(
+                        "Failed to get sprite #{sprite_id} from font '{}'",
+                        &self.fonts[asset_id].name
+                    )
+                });
+        }
+
+        Ewwow.raise()
+            .with_context(|| format!("Failed to get sprite texture from asset #{asset_id} as this asset id does not exist"))?;
+
+        unreachable!()
+    }
+
     pub fn build_image(&self, srcs: &Sources) -> anyhow::Result<image::RgbaImage> {
         let mut output = RgbaImage::new(
             self.final_image_bounds.width as u32,
@@ -96,8 +128,8 @@ impl TextureAtlas {
         );
 
         for &(asset_id, sprite_id, bounds) in self.sprite_bounds.iter() {
-            let sprite_texture = self.assets[asset_id]
-                .get_sprite_texture(sprite_id, srcs)
+            let sprite_texture = self
+                .get_asset_sprite_texture(asset_id, sprite_id, srcs)
                 .with_context(|| {
                     format!("Failed to retrieve sprite #{sprite_id} of asset #{asset_id}")
                 })?;
@@ -174,4 +206,13 @@ impl TextureAtlas {
 
         true
     }
+
+    pub fn get_font_asset_id(&self, font_index: usize) -> usize {
+        font_index
+    }
+}
+
+pub trait Atlasable {
+    fn get_sprite_sizes(&self) -> Vec<ISize>;
+    fn get_sprite_texture(&self, index: usize, srcs: &Sources) -> anyhow::Result<image::RgbaImage>;
 }
