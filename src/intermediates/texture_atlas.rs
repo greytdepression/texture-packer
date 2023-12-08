@@ -152,7 +152,9 @@ impl TextureAtlas {
         self.sprite_bounds.clear();
 
         // Sort the sprites by height
-        self.sprite_sizes
+        let mut sprite_sizes = self.sprite_sizes.clone();
+
+        sprite_sizes
             .sort_by(|&(_, _, a_size), &(_, _, b_size)| {
                 // Use reverse cmp to get decreasing heights
                 b_size.height.cmp(&a_size.height)
@@ -164,8 +166,11 @@ impl TextureAtlas {
 
         let mut index = 0;
 
-        while index < self.sprite_sizes.len() {
-            let (i1, i2, size) = self.sprite_sizes[index];
+        let pad_h = self.padding.hori();
+        let pad_v = self.padding.vert();
+
+        while index < sprite_sizes.len() {
+            let (i1, i2, size) = sprite_sizes[index];
 
             // Sanity check -- if we didn't check this we could get an endless loop
             if size.width > width {
@@ -175,15 +180,42 @@ impl TextureAtlas {
             // Start of a new row
             if current_x == 0 {
                 // Check that the sprites actually fit in the row
-                if current_y + size.height + self.padding.vert() > height {
+                if current_y + size.height + pad_v > height {
                     return false;
                 }
 
-                next_y = current_y + size.height + self.padding.vert();
+                next_y = current_y + size.height + pad_v;
             }
 
             // Check that this sprite still fits in the row
-            if current_x + self.padding.hori() + size.width > width {
+            if current_x + pad_h + size.width > width {
+
+                // The sprite doesn't fit anymore. See if we can fit a later sprite in
+                if let Some((other_index_offset, &(j1, j2, other_size))) = sprite_sizes[index+1..]
+                    .iter()
+                    .enumerate()
+                    .find(|(_, (_, _, other_size))| {
+                        current_x + pad_h + other_size.width <= width
+                    })
+                {
+                    // The sprite fits!
+                    let bounds = IRect::new(
+                        current_x + self.padding.left,
+                        current_y + self.padding.top,
+                        other_size.width,
+                        other_size.height,
+                    );
+
+                    self.sprite_bounds.push((j1, j2, bounds));
+
+                    current_x += other_size.width + pad_h;
+
+                    // Delete the sprite from the vector
+                    sprite_sizes.remove(index + 1 + other_index_offset);
+
+                    continue;
+                }
+
                 current_x = 0;
                 current_y = next_y;
                 continue;
@@ -199,7 +231,7 @@ impl TextureAtlas {
 
             self.sprite_bounds.push((i1, i2, bounds));
 
-            current_x += size.width + self.padding.hori();
+            current_x += size.width + pad_h;
 
             index += 1;
         }
