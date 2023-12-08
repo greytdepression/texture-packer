@@ -10,4 +10,5 @@ A custom texture packer I'm building for my game project written in Rust.
 - [x] Creating texture atlases using custom packing algo
 - [x] Exporting everything in a JSON format
 - [x] Exporting everything in an [RMP](https://github.com/3Hren/msgpack-rust) format
+- [ ] Deduplicate sprites in atlas
 
