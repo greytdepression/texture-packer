@@ -3,14 +3,15 @@
 
 use anyhow::Context;
 use intermediates::{font, texture_atlas::TextureAtlas};
+use outputs::atlas_meta::AtlasMeta;
 
 mod error;
+mod font_shared;
 mod inputs;
 mod intermediates;
 mod math;
 mod outputs;
 mod sources;
-mod font_shared;
 
 fn main() -> anyhow::Result<()> {
     let mut sources = sources::Sources::new();
@@ -44,6 +45,23 @@ fn main() -> anyhow::Result<()> {
     atlas_image
         .save("atlas.png")
         .context("Failed to save atlas image")?;
+
+    let atlas_meta = AtlasMeta::from_texture_atlas(
+        "font-atlas".to_string(),
+        "atlas.png".to_string(),
+        &atlas
+    ).context("Failed to generate AtlasMeta from texture atlas")?;
+
+    let atlas_meta_json = serde_json::to_string_pretty(&atlas_meta)
+        .context("Failed to JSON serialize atlas meta")?;
+
+    std::fs::write("font.json", atlas_meta_json)
+        .context("Failed to write JSON file")?;
+
+    let atlas_meta_rmp = rmp_serde::to_vec(&atlas_meta).unwrap();
+
+    std::fs::write("atlas.rmp", atlas_meta_rmp)
+        .context("Failed to write RMP file")?;
 
     Ok(())
 }
